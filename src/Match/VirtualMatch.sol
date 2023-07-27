@@ -6,6 +6,11 @@ pragma solidity ^0.8.19;
 // import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
 
 contract VirtualMatch {
+    error VirtualMatch__InvalidPlayerList();
+    error VirtualMatch__InvalidStartTime();
+    error VirtualMatch__InvalidMatchId();
+    error VirtualMatch__MatchIsAlreadyFull();
+
     struct Player {
         address nftAddress;
         uint256 playerId;
@@ -62,8 +67,15 @@ contract VirtualMatch {
         uint[] calldata _teamAPlayers,
         address[] calldata _teamAPlayersAddress
     ) external payable {
-        require(_teamAPlayers.length == 11, "Invalid player list.");
-        require(_startTime > block.timestamp, "Invalid start time.");
+        if (_teamAPlayers.length != 11) {
+            revert VirtualMatch__InvalidPlayerList();
+        }
+        if (_teamAPlayersAddress.length != 11) {
+            revert VirtualMatch__InvalidPlayerList();
+        }
+        if (_startTime <= block.timestamp) {
+            revert VirtualMatch__InvalidStartTime();
+        }
 
         Match memory newMatch = Match({
             matchId: matchCount,
@@ -94,12 +106,19 @@ contract VirtualMatch {
         uint[] calldata _teamBPlayers,
         address[] calldata _teamBPlayersAddress
     ) external payable {
-        require(_matchId < matchCount, "Invalid match ID.");
-        require(
-            matches[_matchId].teamBPlayers.length == 0,
-            "Match is already full."
-        );
-        require(_teamBPlayers.length > 0, "Invalid player list.");
+        if (_matchId > matchCount) {
+            revert VirtualMatch__InvalidMatchId();
+        }
+        if (matches[_matchId].teamBPlayers.length != 0) {
+            revert VirtualMatch__MatchIsAlreadyFull();
+        }
+
+        if (_teamBPlayers.length != 11) {
+            revert VirtualMatch__InvalidPlayerList();
+        }
+        if (_teamBPlayersAddress.length != 11) {
+            revert VirtualMatch__InvalidPlayerList();
+        }
 
         matches[_matchId].teamBPlayers = _teamBPlayers;
         matches[_matchId].teamBPlayersAddress = _teamBPlayersAddress;
