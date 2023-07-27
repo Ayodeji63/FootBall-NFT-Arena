@@ -16,8 +16,10 @@ contract VirtualMatch {
         uint256 matchId;
         uint256 startTime;
         uint256 endTime;
-        mapping(uint => Player) teamAPlayers; // List of NFT IDs representing players of Team A
-        mapping(uint => Player) teamBPlayers; // List of NFT IDs representing players of Team B
+        uint256[] teamAPlayers; // List of NFT IDs representing players of Team A
+        address[] teamAPlayersAddress;
+        uint256[] teamBPlayers; // List of NFT IDs representing players of Team B
+        address[] teamBPlayersAddress;
         uint256 teamAScore;
         uint256 teamBScore;
         bool matchComplete;
@@ -31,11 +33,15 @@ contract VirtualMatch {
     uint256 internal fee;
 
     /** Events */
-    event MatchCreated(uint256 matchId, uint256 startTime, uint256 endTime);
+    event MatchCreated(
+        uint256 indexed matchId,
+        uint256 startTime,
+        uint256 endTime
+    );
     event MatchJoined(
         uint256 matchId,
-        Player[] teamAPlayers,
-        Player[] teamBPlayers
+        uint[] teamAPlayers,
+        uint[] teamBPlayers
     );
     event MatchOutcome(uint256 matchId, uint256 teamAScore, uint256 teamBScore);
 
@@ -53,7 +59,8 @@ contract VirtualMatch {
     function proposeMatch(
         uint256 _startTime,
         uint256 _endTime,
-        Player[] calldata _teamAPlayers
+        uint[] calldata _teamAPlayers,
+        address[] calldata _teamAPlayersAddress
     ) external payable {
         require(_teamAPlayers.length == 11, "Invalid player list.");
         require(_startTime > block.timestamp, "Invalid start time.");
@@ -63,7 +70,9 @@ contract VirtualMatch {
             startTime: _startTime,
             endTime: _endTime,
             teamAPlayers: _teamAPlayers,
-            teamBPlayers: new Player[](0), // Empty teamBPlayers array initially
+            teamAPlayersAddress: _teamAPlayersAddress,
+            teamBPlayers: new uint[](0), // Empty teamBPlayers array initially
+            teamBPlayersAddress: new address[](0),
             teamAScore: 0,
             teamBScore: 0,
             matchComplete: false
@@ -82,7 +91,8 @@ contract VirtualMatch {
     // Function for player2 to join an existing match
     function joinMatch(
         uint256 _matchId,
-        Player[] calldata _teamBPlayers
+        uint[] calldata _teamBPlayers,
+        address[] calldata _teamBPlayersAddress
     ) external payable {
         require(_matchId < matchCount, "Invalid match ID.");
         require(
@@ -92,6 +102,7 @@ contract VirtualMatch {
         require(_teamBPlayers.length > 0, "Invalid player list.");
 
         matches[_matchId].teamBPlayers = _teamBPlayers;
+        matches[_matchId].teamBPlayersAddress = _teamBPlayersAddress;
 
         emit MatchJoined(
             _matchId,
@@ -141,8 +152,10 @@ contract VirtualMatch {
         returns (
             uint256 startTime,
             uint256 endTime,
-            Player[] memory teamAPlayers,
-            Player[] memory teamBPlayers,
+            uint[] memory teamAPlayers,
+            address[] memory teamAPlayersAddress,
+            uint[] memory teamBPlayers,
+            address[] memory teamBPlayersAddress,
             uint256 teamAScore,
             uint256 teamBScore,
             bool matchComplete
@@ -155,7 +168,9 @@ contract VirtualMatch {
             currentMatch.startTime,
             currentMatch.endTime,
             currentMatch.teamAPlayers,
+            currentMatch.teamAPlayersAddress,
             currentMatch.teamBPlayers,
+            currentMatch.teamBPlayersAddress,
             currentMatch.teamAScore,
             currentMatch.teamBScore,
             currentMatch.matchComplete
@@ -169,12 +184,12 @@ contract VirtualMatch {
     ) internal view returns (bool) {
         Match storage currentMatch = matches[_matchId];
         for (uint256 i = 0; i < currentMatch.teamAPlayers.length; i++) {
-            if (currentMatch.teamAPlayers[i].playerId == player) {
+            if (currentMatch.teamAPlayers[i] == player) {
                 return true;
             }
         }
         for (uint256 i = 0; i < currentMatch.teamBPlayers.length; i++) {
-            if (currentMatch.teamBPlayers[i].playerId == player) {
+            if (currentMatch.teamBPlayers[i] == player) {
                 return true;
             }
         }
